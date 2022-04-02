@@ -1,0 +1,53 @@
+image:
+  harbor.shopeemobile.com/games/ut:1.0
+
+
+# 定义 stages
+stages:
+  - lint
+  - test
+  - noti
+
+lint_job:
+  stage: lint
+  only:
+    - master
+    - release
+  script:
+    - golangci-lint run
+  tags:
+    - share-standard
+
+test_job:
+  stage: test
+  only:
+    - master
+    - release
+  script:
+    - nohup redis-server &
+    - /etc/init.d/mysql start
+    - go test ./...
+  tags:
+    - share-standard
+
+noti_job1:
+  stage: noti
+  script:
+    - export SEATALK_WEBHOOK_URL=https://openapi.seatalk.io/webhook/group/xxxx
+    - export CI_RESULT=Failed
+    - cd /go
+    - ./ci_noti.sh
+  when: on_failure
+  tags:
+    - share-standard
+
+noti_job2:
+  stage: noti
+  script:
+    - export SEATALK_WEBHOOK_URL=https://openapi.seatalk.io/webhook/group/xxx
+    - export CI_RESULT=Success
+    - cd /go
+    - ./ci_noti.sh
+  when: on_success
+  tags:
+    - share-standard
